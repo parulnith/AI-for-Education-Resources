@@ -15,9 +15,6 @@ As a mother, I have seen firsthand how a one-size-fits-all education system does
 ## Contents
 
 - **Research Papers:** Articles and studies that explore the impact of AI in education.
-## Research Papers
-
-## Research Papers
 
 | Title | Authors | Published | Summary | Link |
 |---|---|---|---|---|
