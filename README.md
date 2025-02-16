@@ -21,4 +21,4 @@ As a mother, I have seen firsthand how a one-size-fits-all education system fall
 
 ## Additional Resources
 
-I also include resources from [Stanford's GenAI Repository](https://scale.stanfo
+
