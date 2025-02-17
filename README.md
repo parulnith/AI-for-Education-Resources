@@ -1,4 +1,4 @@
-]# AI for Education 🎓🤖
+# AI for Education 🎓🤖
 
 This README provides an overview of the project, its purpose, and contents.
 
