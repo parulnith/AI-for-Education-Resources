@@ -49,7 +49,7 @@ As a mother, I've seen firsthand that a one-size-fits-all education system doesn
 | Generative AI: Implications and Applications for Education |
 | Encouraging Responsible Use of Generative AI in Education: A Reward-Based Learning Approach |
 
-*(Links to individual pages for each paper would go here in a real implementation.)*
+
 
 ### b. Apps
 
