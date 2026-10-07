@@ -9,7 +9,9 @@ const mirror = $("mirror");
 const popover = $("popover");
 const aiBar = $("aiBar");
 
-const CATEGORIES = ["correctness", "clarity", "engagement", "delivery"];
+const CHECK_CATS = ["correctness", "clarity", "engagement", "delivery"];
+const CATEGORIES = [...CHECK_CATS, "style"];
+const LABELS = { correctness: "Correctness", clarity: "Clarity", engagement: "Engagement", delivery: "Delivery", style: "AI-like" };
 const CHECK_DELAY_MS = 1800;
 const SAMPLE = `Teh water cycle is a very good example of how nature recycle it's resources. When the sun heats up oceans and lakes, water evaporates and rises in to the air as vapor.
 
@@ -68,7 +70,7 @@ async function callBrowser(path, body) {
   }
   if (body.text.length > bundle.MAX_CHARS) throw new Error(`Text must be under ${bundle.MAX_CHARS} characters.`);
   try {
-    return await state.assistant[path.endsWith("check") ? "check" : "rewrite"](body);
+    return await state.assistant[path.split("/").pop()](body);
   } catch (err) {
     const { auth, message } = bundle.describeError(err);
     if (auth) openKeyDialog(message);
@@ -104,17 +106,19 @@ function locate(text, s, taken) {
   return { start, end: start + s.original.length };
 }
 
-function applyResults(text, result) {
-  const taken = [];
-  const out = [];
+// Replaces the suggestions in `cats` with a new run's results. Suggestions from
+// other runs stay, unless a new one overlaps them (the newest run wins).
+function applyResults(text, result, cats = CHECK_CATS) {
+  const fresh = [];
   for (const s of result.suggestions || []) {
-    if (!CATEGORIES.includes(s.category) || s.original === s.replacement || state.dismissed.has(keyOf(s))) continue;
-    const pos = locate(text, s, taken);
+    if (!cats.includes(s.category) || s.original === s.replacement || state.dismissed.has(keyOf(s))) continue;
+    const pos = locate(text, s, fresh);
     if (!pos) continue;
-    taken.push(pos);
-    out.push({ ...s, ...pos, id: nextId++ });
+    fresh.push({ ...s, ...pos, id: nextId++ });
   }
-  state.suggestions = out.sort((a, b) => a.start - b.start);
+  const overlaps = (a) => fresh.some((b) => a.start < b.end && a.end > b.start);
+  const kept = state.suggestions.filter((s) => !cats.includes(s.category) && !overlaps(s));
+  state.suggestions = [...kept, ...fresh].sort((a, b) => a.start - b.start);
 }
 
 // Keep suggestion offsets in sync as the user types; drop ones touched by the edit.
@@ -170,7 +174,7 @@ function cardHtml(s) {
     ? `<del>${esc(s.original)}</del> <ins>${esc(s.replacement)}</ins>`
     : `<del>${esc(s.original)}</del> <span class="muted">(remove)</span>`;
   return `
-    <div class="card-head"><i class="dot ${s.category}"></i>${s.category[0].toUpperCase() + s.category.slice(1)}
+    <div class="card-head"><i class="dot ${s.category}"></i>${LABELS[s.category]}
       · <span class="card-title">${esc(s.title)}</span></div>
     <div class="card-preview">${change}</div>
     <div class="card-body">
@@ -314,6 +318,35 @@ function suggestionAtCaret() {
   );
 }
 
+// ---------- "Sounds like AI?" ----------
+
+const LEVELS = { low: "Low", medium: "Medium", high: "High" };
+
+async function runStyle() {
+  const text = ta.value;
+  if (!text.trim()) return setStatus("", "Write or paste some text first.");
+  const btn = $("styleBtn");
+  btn.disabled = true;
+  setStatus("busy", "Looking for phrasing that reads as AI-written…");
+  try {
+    const result = await api("api/style", { text, goals: state.goals });
+    const level = LEVELS[result.ai_likeness] ? result.ai_likeness : "medium";
+    applyResults(ta.value, { suggestions: (result.suggestions || []).map((s) => ({ ...s, category: "style" })) }, ["style"]);
+    $("aiLevel").textContent = LEVELS[level];
+    $("aiLevel").className = `level ${level}`;
+    $("aiSignals").innerHTML = (result.signals || []).map((x) => `<li>${esc(String(x))}</li>`).join("");
+    $("aiMeter").hidden = false;
+    state.filter = "style";
+    const n = state.suggestions.filter((s) => s.category === "style").length;
+    setStatus("", n ? `${n} passage${n === 1 ? "" : "s"} could sound more like you.` : "Nothing stands out as AI-like.");
+    render();
+  } catch (err) {
+    setStatus("error", err.message);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
 // ---------- AI rewrite toolbar ----------
 
 function selectionRect(start, end) {
@@ -448,6 +481,7 @@ $("acceptAll").addEventListener("click", () => {
 });
 
 $("checkBtn").addEventListener("click", () => runCheck(true));
+$("styleBtn").addEventListener("click", runStyle);
 
 // AI toolbar
 aiBar.querySelectorAll(".ai-quick button").forEach((b) => b.addEventListener("click", () => runAi(b.dataset.instr)));

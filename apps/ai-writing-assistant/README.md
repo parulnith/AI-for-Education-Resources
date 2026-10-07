@@ -7,6 +7,7 @@ A Grammarly-style editor where you write together with AI (Claude). Type or past
 - **Suggestion cards** in the sidebar. Click a card or an underlined word to see the change and a short explanation, then **Accept** or **Dismiss**. You can also accept all correctness fixes at once.
 - **An overall score and tone** ("Sounds: confident, friendly").
 - **AI rewrite on any selection.** Select text and a toolbar appears with *Improve*, *Shorten*, *Simplify* (for a 10-year-old), *Formal*, *Friendly*, or your own instruction. You can preview the result, then replace the selection or insert the result below it.
+- **🤖 Sounds like AI?** underlines phrasing that reads as machine-written (stock phrases, generic filler, formulaic structure) and suggests more personal wording. It also rates the text Low, Medium or High, with the reasons. This is style feedback, not a detector: no tool can reliably tell whether text was written by AI, so don't use it as proof.
 - **Goals** (audience, formality, domain, intent) that change the feedback. For example, choose *Young students* when you write for a class.
 - Native **undo** (Ctrl/Cmd+Z) works after you accept a suggestion. Your document is autosaved in the browser.
 
@@ -19,6 +20,14 @@ A Grammarly-style editor where you write together with AI (Claude). Type or past
 Open the page, paste your [Anthropic API key](https://console.anthropic.com/settings/keys), and start writing. Your key stays in your browser and is sent only to `api.anthropic.com`. Use the **🔑 API key** button to change or forget it.
 
 > **One-time setup for the repository owner:** go to *Settings → Pages* and set **Source** to **GitHub Actions**. After that, every push to `main` that touches this folder redeploys the site through `.github/workflows/deploy-writing-assistant.yml`. You can also run the workflow by hand from the *Actions* tab.
+
+### On claude.ai (no API key)
+
+`claude-ai/build.py` builds a single-page version that runs on your Claude subscription instead of an API key. It works only inside claude.ai, and checks run when you click **Check writing** instead of automatically while you type.
+
+```bash
+python3 claude-ai/build.py public writing-assistant.html
+```
 
 ## Run it locally
 
@@ -49,6 +58,7 @@ public/styles.css   Grammarly-like styling (light and dark)
 public/app.js       Editor logic: underlines, cards, accept/dismiss, AI rewrite
 src/assistant.js    Prompts, output schemas and Claude calls (shared)
 src/browser.js      Browser entry, bundled to public/claude-bundle.js by `npm run build`
+claude-ai/build.py  Builds the claude.ai version from public/
 server.js           Node server: serves the page and calls Claude with the server's key
 ```
 

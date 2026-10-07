@@ -10,6 +10,7 @@
   --clarity: #3b82f6;
   --engagement: #16a34a;
   --delivery: #8b5cf6;
+  --style: #d97706;
   --shadow: 0 6px 24px rgba(20, 24, 40, 0.12);
   --editor-font: 18px/1.75 "Iowan Old Style", "Palatino Linotype", Georgia, serif;
 }
@@ -103,10 +104,12 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .backdrop mark.clarity { border-color: var(--clarity); }
 .backdrop mark.engagement { border-color: var(--engagement); }
 .backdrop mark.delivery { border-color: var(--delivery); }
+.backdrop mark.style { border-color: var(--style); border-bottom-style: dotted; border-bottom-width: 3px; }
 .backdrop mark.active.correctness { background: color-mix(in srgb, var(--correctness) 18%, transparent); }
 .backdrop mark.active.clarity { background: color-mix(in srgb, var(--clarity) 18%, transparent); }
 .backdrop mark.active.engagement { background: color-mix(in srgb, var(--engagement) 18%, transparent); }
 .backdrop mark.active.delivery { background: color-mix(in srgb, var(--delivery) 18%, transparent); }
+.backdrop mark.active.style { background: color-mix(in srgb, var(--style) 18%, transparent); }
 .backdrop mark.pending { border-bottom-style: dashed; border-color: var(--accent); background: color-mix(in srgb, var(--accent) 15%, transparent); }
 
 .stats { display: flex; gap: 18px; justify-content: center; color: var(--muted); padding: 12px; font-size: 13px; }
@@ -157,6 +160,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .dot.clarity { background: var(--clarity); }
 .dot.engagement { background: var(--engagement); }
 .dot.delivery { background: var(--delivery); }
+.dot.style { background: var(--style); }
 
 /* ---------- Suggestion cards ---------- */
 .cards { display: flex; flex-direction: column; gap: 8px; }
@@ -170,6 +174,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .card.clarity { border-left-color: var(--clarity); }
 .card.engagement { border-left-color: var(--engagement); }
 .card.delivery { border-left-color: var(--delivery); }
+.card.style { border-left-color: var(--style); }
 .card-head { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
 .card-title { font-weight: 600; color: var(--text); font-size: 13px; }
 .card-preview { margin-top: 4px; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -260,3 +265,25 @@ fieldset label:has(input:checked) { border-color: var(--accent); background: col
 .fine { color: var(--muted); font-size: 12px; margin: 10px 0 16px; }
 .goals-actions { gap: 12px; align-items: center; }
 .goals a { color: var(--accent-ink); }
+
+/* ---------- "Sounds like AI?" panel ---------- */
+.ai-meter {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px;
+}
+.ai-meter-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ai-meter-label { font-weight: 600; }
+.level { font-size: 12px; font-weight: 600; border-radius: 999px; padding: 2px 10px; }
+.level.low { color: var(--engagement); background: color-mix(in srgb, var(--engagement) 14%, transparent); }
+.level.medium { color: var(--style); background: color-mix(in srgb, var(--style) 16%, transparent); }
+.level.high { color: var(--correctness); background: color-mix(in srgb, var(--correctness) 14%, transparent); }
+.signals { margin: 8px 0 0; padding-left: 18px; font-size: 13px; display: grid; gap: 4px; }
+.ai-meter .fine { margin: 8px 0 0; }
+
+@media (max-width: 700px) {
+  .topbar { flex-wrap: wrap; gap: 8px; padding-inline: 16px; }
+  .brand { order: 1; }
+  .topbar-actions { order: 2; margin-left: auto; flex-wrap: wrap; justify-content: flex-end; }
+  .doc-title { order: 3; flex-basis: 100%; }
+  .layout { padding-inline: 16px; }
+  .page { padding: 28px 20px; }
+}

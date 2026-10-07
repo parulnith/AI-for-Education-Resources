@@ -12,6 +12,7 @@
     <input id="title" class="doc-title" placeholder="Untitled document" aria-label="Document title" />
     <div class="topbar-actions">
       <button id="keyBtn" class="ghost" hidden>🔑 API key</button>
+      <button id="styleBtn" class="ghost" title="Find phrasing that reads as AI-generated">🤖 Sounds like AI?</button>
       <button id="goalsBtn" class="ghost">🎯 Goals</button>
       <button id="checkBtn" class="ghost">↻ Check now</button>
     </div>
@@ -39,6 +40,15 @@
       </div>
       <p class="summary" id="summary"></p>
 
+      <section class="ai-meter" id="aiMeter" hidden>
+        <div class="ai-meter-head">
+          <span class="ai-meter-label">Reads as AI-written</span>
+          <span class="level" id="aiLevel"></span>
+        </div>
+        <ul class="signals" id="aiSignals"></ul>
+        <p class="fine">Style feedback, not proof of who wrote it. No tool can reliably tell whether text was written by AI.</p>
+      </section>
+
       <div class="status" id="status"></div>
 
       <nav class="tabs" id="tabs">
@@ -47,6 +57,7 @@
         <button data-cat="clarity"><i class="dot clarity"></i>Clarity <b id="count-clarity">0</b></button>
         <button data-cat="engagement"><i class="dot engagement"></i>Engagement <b id="count-engagement">0</b></button>
         <button data-cat="delivery"><i class="dot delivery"></i>Delivery <b id="count-delivery">0</b></button>
+        <button data-cat="style"><i class="dot style"></i>AI-like <b id="count-style">0</b></button>
       </nav>
 
       <div class="cards" id="cards"></div>
