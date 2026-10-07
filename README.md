@@ -56,6 +56,10 @@ As a mother, I've seen firsthand that a one-size-fits-all education system doesn
 Interactive applications that support teaching and personalized learning.  
 *(Details on a separate "Apps" page.)*
 
+| App | Description |
+|---|---|
+| [AI Writing Assistant](apps/ai-writing-assistant/) ([try it online](https://parulnith.github.io/AI-for-Education-Resources/)) | A Grammarly-style editor: inline grammar, clarity and tone suggestions, plus AI rewrites of any selected text (improve, shorten, simplify for kids, and more). |
+
 ### c. Tools
 
 Practical resources and libraries to build or enhance educational products.  
