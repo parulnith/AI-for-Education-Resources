@@ -247,3 +247,16 @@ fieldset label {
 fieldset input { display: none; }
 fieldset label:has(input:checked) { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent-ink); }
 .goals-actions { display: flex; justify-content: flex-end; }
+
+/* ---------- API key dialog ---------- */
+.key-input {
+  width: 100%; border: 1px solid var(--border); background: var(--bg); color: var(--text);
+  border-radius: 8px; padding: 10px 12px; font: 14px ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.key-input:focus { outline: 2px solid var(--accent); border-color: transparent; }
+.remember { display: flex; align-items: center; gap: 6px; margin: 10px 0 0; font-size: 13px; }
+.key-error { color: var(--correctness); font-size: 13px; margin: 8px 0 0; }
+.key-error:empty { display: none; }
+.fine { color: var(--muted); font-size: 12px; margin: 10px 0 16px; }
+.goals-actions { gap: 12px; align-items: center; }
+.goals a { color: var(--accent-ink); }

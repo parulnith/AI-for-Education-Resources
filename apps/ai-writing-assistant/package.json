@@ -5,7 +5,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "mock": "MOCK=1 node server.js"
+    "mock": "MOCK=1 node server.js",
+    "build": "esbuild src/browser.js --bundle --format=esm --minify --target=es2020 --outfile=public/claude-bundle.js"
   },
   "license": "ISC",
   "dependencies": {
@@ -13,5 +14,8 @@
     "zod": "^4.6.5"
   },
   "type": "module",
-  "private": true
+  "private": true,
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  }
 }

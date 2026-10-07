@@ -36,7 +36,11 @@ const state = {
   timer: null,
   goals: store.get("wa.goals", { audience: "general", formality: "neutral", domain: "general", intent: "inform" }),
   ai: null,                 // {start, end, instruction, result}
+  mode: null,               // "server" (server.js proxies Claude) or "browser" (viewer's own API key)
+  assistant: null,          // browser mode: {check, rewrite} from claude-bundle.js
+  ready: null,              // resolves once the mode is known
 };
+let bundle = null;          // browser mode: the lazily imported claude-bundle.js
 let nextId = 1;
 
 // ---------- Utilities ----------
@@ -45,6 +49,8 @@ const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, 
 const keyOf = (s) => `${s.original}\u0000${s.replacement}`;
 
 async function api(path, body) {
+  await state.ready;
+  if (state.mode === "browser") return callBrowser(path, body);
   const res = await fetch(path, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -53,6 +59,21 @@ async function api(path, body) {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
   return data;
+}
+
+async function callBrowser(path, body) {
+  if (!state.assistant) {
+    openKeyDialog();
+    throw new Error("Add your Anthropic API key to start.");
+  }
+  if (body.text.length > bundle.MAX_CHARS) throw new Error(`Text must be under ${bundle.MAX_CHARS} characters.`);
+  try {
+    return await state.assistant[path.endsWith("check") ? "check" : "rewrite"](body);
+  } catch (err) {
+    const { auth, message } = bundle.describeError(err);
+    if (auth) openKeyDialog(message);
+    throw new Error(message);
+  }
 }
 
 // Replace a range through execCommand so the browser's native undo (Ctrl+Z) still works.
@@ -231,7 +252,7 @@ async function runCheck(force = false) {
   const mySeq = ++state.seq;
   setStatus("busy", "Checking your writing…");
   try {
-    const result = await api("/api/check", { text, goals: state.goals });
+    const result = await api("api/check", { text, goals: state.goals });
     if (mySeq !== state.seq) return; // a newer check is in flight
     applyResults(ta.value, result); // locate against the *current* text
     state.lastChecked = text;
@@ -337,7 +358,7 @@ async function runAi(instruction) {
   $("aiResultText").innerHTML = `<div class="ai-loading"><span class="spinner"></span>Writing…</div>`;
   $("aiNote").textContent = "";
   try {
-    const { rewrite, note } = await api("/api/rewrite", {
+    const { rewrite, note } = await api("api/rewrite", {
       text: ta.value,
       selection: ta.value.slice(ai.start, ai.end),
       instruction,
@@ -475,6 +496,83 @@ dialog.addEventListener("close", () => {
   }
 });
 
+// ---------- Backend: local server, or the viewer's own API key ----------
+
+const keyDialog = $("keyDialog");
+
+function savedKey() {
+  try { return localStorage.getItem("wa.apiKey") || sessionStorage.getItem("wa.apiKey"); } catch { return null; }
+}
+
+function saveKey(key, remember) {
+  try {
+    localStorage.removeItem("wa.apiKey");
+    sessionStorage.removeItem("wa.apiKey");
+    if (key) (remember ? localStorage : sessionStorage).setItem("wa.apiKey", key);
+  } catch { /* storage unavailable: the key lives only in memory */ }
+}
+
+function openKeyDialog(error = "") {
+  $("keyError").textContent = error;
+  $("keyInput").value = savedKey() || "";
+  $("keyForget").hidden = !savedKey();
+  if (!keyDialog.open) keyDialog.showModal();
+  $("keyInput").focus();
+}
+
+async function connectWithKey(key) {
+  state.assistant = await bundle.connect(key);
+  setStatus("", "Connected to Claude");
+}
+
+async function detectMode() {
+  try {
+    const res = await fetch("api/health");
+    if (res.ok && (await res.json()).ok) { state.mode = "server"; return; }
+  } catch { /* no server: static hosting */ }
+
+  state.mode = "browser";
+  $("keyBtn").hidden = false;
+  bundle = await import("./claude-bundle.js");
+  const key = savedKey();
+  if (!key) return openKeyDialog();
+  try {
+    await connectWithKey(key);
+  } catch (err) {
+    openKeyDialog(bundle.describeError(err).message);
+  }
+}
+
+$("keyBtn").addEventListener("click", () => openKeyDialog());
+
+$("keyForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const key = $("keyInput").value.trim();
+  const btn = $("keySubmit");
+  btn.disabled = true;
+  btn.textContent = "Connecting…";
+  $("keyError").textContent = "";
+  try {
+    await connectWithKey(key);
+    saveKey(key, $("keyRemember").checked);
+    keyDialog.close();
+    runCheck(true);
+  } catch (err) {
+    $("keyError").textContent = bundle.describeError(err).message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Start writing";
+  }
+});
+
+$("keyForget").addEventListener("click", () => {
+  saveKey(null);
+  state.assistant = null;
+  $("keyInput").value = "";
+  $("keyForget").hidden = true;
+  setStatus("", "API key removed from this browser");
+});
+
 // ---------- Init ----------
 
 ta.value = store.get("wa.text", SAMPLE);
@@ -482,4 +580,5 @@ state.lastText = ta.value;
 autosize();
 render();
 if (document.fonts) document.fonts.ready.then(autosize);
-scheduleCheck(300);
+state.ready = detectMode();
+state.ready.then(() => scheduleCheck(300));

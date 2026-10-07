@@ -58,7 +58,7 @@ Interactive applications that support teaching and personalized learning.
 
 | App | Description |
 |---|---|
-| [AI Writing Assistant](apps/ai-writing-assistant/) | A Grammarly-style editor: inline grammar, clarity and tone suggestions, plus AI rewrites of any selected text (improve, shorten, simplify for kids, and more). |
+| [AI Writing Assistant](apps/ai-writing-assistant/) ([try it online](https://parulnith.github.io/AI-for-Education-Resources/)) | A Grammarly-style editor: inline grammar, clarity and tone suggestions, plus AI rewrites of any selected text (improve, shorten, simplify for kids, and more). |
 
 ### c. Tools
 

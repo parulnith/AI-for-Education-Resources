@@ -11,6 +11,7 @@
     <div class="brand"><span class="logo">W</span> Writing Assistant</div>
     <input id="title" class="doc-title" placeholder="Untitled document" aria-label="Document title" />
     <div class="topbar-actions">
+      <button id="keyBtn" class="ghost" hidden>🔑 API key</button>
       <button id="goalsBtn" class="ghost">🎯 Goals</button>
       <button id="checkBtn" class="ghost">↻ Check now</button>
     </div>
@@ -111,6 +112,23 @@
         <label><input type="radio" name="intent" value="tell a story" /> Tell a story</label>
       </fieldset>
       <div class="goals-actions"><button class="primary" value="save">Done</button></div>
+    </form>
+  </dialog>
+
+  <!-- API key dialog (only used when the page is hosted without the Node server) -->
+  <dialog id="keyDialog">
+    <form class="goals" id="keyForm">
+      <h2>Connect to Claude</h2>
+      <p class="muted">Paste your Anthropic API key to start writing.
+        <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Get a key</a></p>
+      <input id="keyInput" class="key-input" type="password" placeholder="sk-ant-…" autocomplete="off" spellcheck="false" required />
+      <label class="remember"><input type="checkbox" id="keyRemember" checked /> Remember on this device</label>
+      <p class="key-error" id="keyError"></p>
+      <p class="fine">Your key stays in this browser and is sent only to api.anthropic.com. Usage is billed to your Anthropic account.</p>
+      <div class="goals-actions">
+        <button type="button" class="link" id="keyForget" hidden>Forget key</button>
+        <button class="primary" id="keySubmit">Start writing</button>
+      </div>
     </form>
   </dialog>
 

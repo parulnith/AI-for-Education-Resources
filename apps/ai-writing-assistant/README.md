@@ -12,7 +12,15 @@ A Grammarly-style editor where you write together with AI (Claude). Type or past
 
 ![Screenshot](screenshot.png)
 
-## Run it
+## Use it online
+
+**https://parulnith.github.io/AI-for-Education-Resources/**
+
+Open the page, paste your [Anthropic API key](https://console.anthropic.com/settings/keys), and start writing. Your key stays in your browser and is sent only to `api.anthropic.com`. Use the **🔑 API key** button to change or forget it.
+
+> **One-time setup for the repository owner:** go to *Settings → Pages* and set **Source** to **GitHub Actions**. After that, every push to `main` that touches this folder redeploys the site through `.github/workflows/deploy-writing-assistant.yml`. You can also run the workflow by hand from the *Actions* tab.
+
+## Run it locally
 
 Requires Node.js 18+ and an [Anthropic API key](https://console.anthropic.com/).
 
@@ -39,10 +47,13 @@ Optional environment variables:
 public/index.html   Editor page (top bar, editor, sidebar, AI toolbar, goals dialog)
 public/styles.css   Grammarly-like styling (light and dark)
 public/app.js       Editor logic: underlines, cards, accept/dismiss, AI rewrite
-server.js           Node server: serves the page and calls Claude
+src/assistant.js    Prompts, output schemas and Claude calls (shared)
+src/browser.js      Browser entry, bundled to public/claude-bundle.js by `npm run build`
+server.js           Node server: serves the page and calls Claude with the server's key
 ```
+
+The page works in two modes. If `server.js` is running, the page uses it, and the API key stays on the server. If the page is hosted as static files (GitHub Pages), it asks for your key and calls Claude directly from the browser.
 
 - **Editor.** A transparent `<textarea>` sits on top of a "backdrop" div that mirrors the text and draws the coloured underlines. This keeps typing, selection and undo native and reliable.
 - **`POST /api/check`** sends the text and your goals to Claude, which returns structured JSON (a score, a tone, and a list of `{category, original, replacement, explanation}`). The browser finds each `original` phrase in the text and underlines it. While you type, underlines shift with the text. About 2 seconds after you stop typing, the text is checked again.
 - **`POST /api/rewrite`** rewrites only the selected passage and sends the whole document along for context.
-- Your API key stays on the server and is never sent to the browser.

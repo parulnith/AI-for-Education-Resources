@@ -10,120 +10,24 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import Anthropic from "@anthropic-ai/sdk";
-import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
-import { z } from "zod";
+import { createAssistant, DEFAULT_MODEL, MAX_CHARS, RefusalError } from "./src/assistant.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = path.join(here, "public");
 const PORT = Number(process.env.PORT ?? 3000);
-const MODEL = process.env.CLAUDE_MODEL ?? "claude-opus-5-5";
+const MODEL = process.env.CLAUDE_MODEL ?? DEFAULT_MODEL;
 const MOCK = process.env.MOCK === "1";
-const MAX_CHARS = 30000;
 
 const client = MOCK ? null : new Anthropic();
+const assistant = MOCK ? null : createAssistant(client, MODEL);
 
-// ---------- Schemas ----------
-
-const Suggestion = z.object({
-  category: z.enum(["correctness", "clarity", "engagement", "delivery"]),
-  title: z.string().describe("2-5 word label, e.g. 'Fix subject-verb agreement'"),
-  original: z.string().describe("Exact substring copied verbatim from the text"),
-  prefix: z
-    .string()
-    .describe("Up to 30 characters that appear immediately before `original` in the text (verbatim), used to locate it; empty string if at the very start"),
-  replacement: z.string().describe("Text that should replace `original`; empty string to delete it"),
-  explanation: z.string().describe("One short sentence a student could understand"),
-});
-
-const CheckResult = z.object({
-  overall_score: z.number().int().describe("0-100 overall writing quality for the stated goals"),
-  tone: z.string().describe("2-4 words describing how the text currently sounds"),
-  summary: z.string().describe("One encouraging sentence on the biggest improvement opportunity"),
-  suggestions: z.array(Suggestion),
-});
-
-const RewriteResult = z.object({
-  rewrite: z.string(),
-  note: z.string().describe("One short sentence on what changed"),
-});
-
-// ---------- Prompts ----------
-
-const CHECK_SYSTEM = `You are a writing assistant embedded in an editor, similar to Grammarly. \
-The writer is often a student or teacher. Review the text and return precise, local edits.
-
-Categories:
-- correctness: spelling, grammar, punctuation, agreement, wrong word.
-- clarity: wordiness, unclear or run-on sentences, passive voice that hurts readability.
-- engagement: bland or repeated words, weak verbs, monotonous sentence starts.
-- delivery: tone, formality, and confidence that do not fit the writer's goals.
-
-Rules:
-- \`original\` MUST be copied character-for-character from the text and be as short as possible \
-(a word or phrase; a full sentence only for sentence-level rewrites). Never span paragraphs.
-- \`prefix\` is the exact text immediately before \`original\`, used to tell repeated phrases apart.
-- Do not overlap suggestions. Do not suggest changes that only restate the text.
-- Respect the writer's voice; suggest only what genuinely helps for their goals.
-- Order suggestions by where they appear in the text.`;
-
-const REWRITE_SYSTEM = `You are a writing assistant inside an editor. Rewrite only the passage \
-you are given, following the instruction and the writer's goals. Keep the meaning unless asked \
-otherwise, keep the same language, and return text that can be pasted straight back in place \
-(no quotes, no commentary in \`rewrite\`).`;
-
-function goalsText(goals = {}) {
-  const g = {
-    audience: goals.audience ?? "general",
-    formality: goals.formality ?? "neutral",
-    domain: goals.domain ?? "general",
-    intent: goals.intent ?? "inform",
-  };
-  return `Writer's goals: audience=${g.audience}; formality=${g.formality}; domain=${g.domain}; intent=${g.intent}.`;
+function check({ text, goals }) {
+  return MOCK ? mockCheck(text) : assistant.check({ text, goals });
 }
 
-// ---------- Claude calls ----------
-
-class RefusalError extends Error {}
-
-async function askClaude({ system, user, schema, effort }) {
-  const response = await client.beta.messages.parse({
-    model: MODEL,
-    max_tokens: 16000,
-    betas: ["server-side-fallback-2026-07-01"],
-    fallbacks: "default",
-    output_config: { effort, format: betaZodOutputFormat(schema) },
-    system,
-    messages: [{ role: "user", content: user }],
-  });
-  if (response.stop_reason === "refusal") {
-    throw new RefusalError("Claude declined to process this text.");
-  }
-  if (response.stop_reason === "max_tokens" || !response.parsed_output) {
-    throw new Error("The response was cut off. Try checking a shorter passage.");
-  }
-  return response.parsed_output;
-}
-
-async function check({ text, goals }) {
-  if (MOCK) return mockCheck(text);
-  return askClaude({
-    system: CHECK_SYSTEM,
-    user: `${goalsText(goals)}\n\n<text>\n${text}\n</text>`,
-    schema: CheckResult,
-    effort: "low", // fast feedback while typing
-  });
-}
-
-async function rewrite({ text, selection, instruction, goals }) {
-  if (MOCK) return { rewrite: selection.toUpperCase(), note: "Mock mode: uppercased the selection." };
-  return askClaude({
-    system: REWRITE_SYSTEM,
-    user:
-      `${goalsText(goals)}\n\nFull document for context:\n<document>\n${text}\n</document>\n\n` +
-      `Passage to rewrite:\n<passage>\n${selection}\n</passage>\n\nInstruction: ${instruction}`,
-    schema: RewriteResult,
-    effort: "medium",
-  });
+function rewrite(body) {
+  if (MOCK) return { rewrite: body.selection.toUpperCase(), note: "Mock mode: uppercased the selection." };
+  return assistant.rewrite(body);
 }
 
 // Offline demo so the UI can be explored without an API key.
@@ -176,6 +80,8 @@ async function readJson(req) {
 
 const server = http.createServer(async (req, res) => {
   try {
+    if (req.method === "GET" && req.url === "/api/health") return send(res, 200, { ok: true, mock: MOCK });
+
     if (req.method === "POST" && (req.url === "/api/check" || req.url === "/api/rewrite")) {
       const body = await readJson(req);
       if (typeof body.text !== "string" || body.text.length > MAX_CHARS) {
