@@ -25,9 +25,34 @@ function check({ text, goals }) {
   return MOCK ? mockCheck(text) : assistant.check({ text, goals });
 }
 
+function style({ text, goals }) {
+  return MOCK ? mockStyle(text) : assistant.style({ text, goals });
+}
+
 function rewrite(body) {
   if (MOCK) return { rewrite: body.selection.toUpperCase(), note: "Mock mode: uppercased the selection." };
   return assistant.rewrite(body);
+}
+
+function mockStyle(text) {
+  const phrases = ["it is important to note", "in today's fast-paced world", "delve into", "plays a crucial role", "in conclusion"];
+  const suggestions = [];
+  for (const phrase of phrases) {
+    const i = text.toLowerCase().indexOf(phrase);
+    if (i === -1) continue;
+    suggestions.push({
+      title: "Replace stock phrase",
+      original: text.slice(i, i + phrase.length),
+      prefix: text.slice(Math.max(0, i - 30), i),
+      replacement: "[say it in your own words]",
+      explanation: "This phrase is common in AI-generated text and adds little.",
+    });
+  }
+  return {
+    ai_likeness: suggestions.length > 1 ? "high" : suggestions.length ? "medium" : "low",
+    signals: ["Mock mode: start the server with an API key for real feedback."],
+    suggestions,
+  };
 }
 
 // Offline demo so the UI can be explored without an API key.
@@ -82,7 +107,7 @@ const server = http.createServer(async (req, res) => {
   try {
     if (req.method === "GET" && req.url === "/api/health") return send(res, 200, { ok: true, mock: MOCK });
 
-    if (req.method === "POST" && (req.url === "/api/check" || req.url === "/api/rewrite")) {
+    if (req.method === "POST" && ["/api/check", "/api/style", "/api/rewrite"].includes(req.url)) {
       const body = await readJson(req);
       if (typeof body.text !== "string" || body.text.length > MAX_CHARS) {
         return send(res, 400, { error: `Text must be a string under ${MAX_CHARS} characters.` });
@@ -90,6 +115,10 @@ const server = http.createServer(async (req, res) => {
       if (req.url === "/api/check") {
         if (!body.text.trim()) return send(res, 200, { overall_score: 100, tone: "", summary: "", suggestions: [] });
         return send(res, 200, await check(body));
+      }
+      if (req.url === "/api/style") {
+        if (!body.text.trim()) return send(res, 400, { error: "Write or paste some text first." });
+        return send(res, 200, await style(body));
       }
       if (typeof body.selection !== "string" || !body.selection.trim() || typeof body.instruction !== "string") {
         return send(res, 400, { error: "Select some text and give an instruction." });

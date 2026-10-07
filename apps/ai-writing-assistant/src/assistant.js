@@ -26,6 +26,14 @@ const CheckResult = z.object({
   suggestions: z.array(Suggestion),
 });
 
+const StyleResult = z.object({
+  ai_likeness: z
+    .enum(["low", "medium", "high"])
+    .describe("How strongly the text shows patterns typical of AI-generated writing"),
+  signals: z.array(z.string()).describe("2-4 short, specific observations about the writing's style"),
+  suggestions: z.array(Suggestion.omit({ category: true })),
+});
+
 const RewriteResult = z.object({
   rewrite: z.string(),
   note: z.string().describe("One short sentence on what changed"),
@@ -34,7 +42,8 @@ const RewriteResult = z.object({
 // ---------- Prompts ----------
 
 const CHECK_SYSTEM = `You are a writing assistant embedded in an editor, similar to Grammarly. \
-The writer is often a student or teacher. Review the text and return precise, local edits.
+The writer is often a student or teacher. Review the text and return precise, local edits. \
+The text is a story: the first line is its title, and blocks are separated by blank lines.
 
 Categories:
 - correctness: spelling, grammar, punctuation, agreement, wrong word.
@@ -44,11 +53,34 @@ Categories:
 
 Rules:
 - \`original\` MUST be copied character-for-character from the text and be as short as possible \
-(a word or phrase; a full sentence only for sentence-level rewrites). Never span paragraphs.
+(a word or phrase; a full sentence only for sentence-level rewrites). Never span blocks.
 - \`prefix\` is the exact text immediately before \`original\`, used to tell repeated phrases apart.
 - Do not overlap suggestions. Do not suggest changes that only restate the text.
 - Respect the writer's voice; suggest only what genuinely helps for their goals.
 - Order suggestions by where they appear in the text.`;
+
+const STYLE_SYSTEM = `You help writers make their text sound like a real person wrote it. \
+Review the text for patterns that make writing read as AI-generated:
+- stock phrases and filler ("delve into", "in today's fast-paced world", "it's important to note", \
+"plays a crucial role", "a testament to", "navigate the complexities", "in conclusion").
+- generic statements with no specific detail, example, opinion or personal voice.
+- uniform sentence length and rhythm; formulaic structure (restating the prompt, three tidy \
+parallel points, a summary conclusion that adds nothing).
+- tics: overused em-dashes, "not just X, but Y", lists of three, rhetorical questions answered \
+at once, empty intensifiers and hedges.
+
+\`ai_likeness\` rates how strongly the text shows these patterns. It is a judgement about style, \
+not about authorship: people write this way too, and neither you nor any detector can know who \
+wrote a text. Never say the text was or was not written by AI.
+
+\`signals\` are 2-4 short, specific observations (quote the text where useful). Include what \
+already sounds human if the text is mostly natural.
+
+\`suggestions\` are local edits that make the writing more specific and personal. \
+\`original\` MUST be copied character-for-character from the text and be as short as possible; \
+\`prefix\` is the exact text immediately before it. When a better version needs the writer's own \
+knowledge, put a short bracketed placeholder in \`replacement\`, like "[an example from your class]". \
+Do not overlap suggestions. Order them by where they appear in the text.`;
 
 const REWRITE_SYSTEM = `You are a writing assistant inside an editor. Rewrite only the passage \
 you are given, following the instruction and the writer's goals. Keep the meaning unless asked \
@@ -88,7 +120,7 @@ async function askClaude(client, model, { system, user, schema, effort }) {
   return response.parsed_output;
 }
 
-// Returns {check, rewrite} bound to an Anthropic client. Shared by the Node
+// Returns {check, style, rewrite} bound to an Anthropic client. Shared by the Node
 // server (server.js) and the browser build (src/browser.js).
 export function createAssistant(client, model = DEFAULT_MODEL) {
   return {
@@ -98,6 +130,13 @@ export function createAssistant(client, model = DEFAULT_MODEL) {
         user: `${goalsText(goals)}\n\n<text>\n${text}\n</text>`,
         schema: CheckResult,
         effort: "low", // fast feedback while typing
+      }),
+    style: ({ text, goals }) =>
+      askClaude(client, model, {
+        system: STYLE_SYSTEM,
+        user: `${goalsText(goals)}\n\n<text>\n${text}\n</text>`,
+        schema: StyleResult,
+        effort: "medium",
       }),
     rewrite: ({ text, selection, instruction, goals }) =>
       askClaude(client, model, {
