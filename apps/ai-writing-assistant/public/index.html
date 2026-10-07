@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI Writing Assistant</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="logo">W</span> Writing Assistant</div>
+    <input id="title" class="doc-title" placeholder="Untitled document" aria-label="Document title" />
+    <div class="topbar-actions">
+      <button id="goalsBtn" class="ghost">🎯 Goals</button>
+      <button id="checkBtn" class="ghost">↻ Check now</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="page-wrap">
+      <div class="page">
+        <div class="editor" id="editor">
+          <div class="backdrop" id="backdrop" aria-hidden="true"></div>
+          <textarea id="text" spellcheck="false" placeholder="Type or paste your text here…"></textarea>
+          <div class="mirror" id="mirror" aria-hidden="true"></div>
+        </div>
+      </div>
+      <footer class="stats" id="stats"></footer>
+    </section>
+
+    <aside class="sidebar">
+      <div class="score-card">
+        <div class="score-ring" id="scoreRing"><span id="scoreNum">–</span></div>
+        <div>
+          <div class="score-label">Overall score</div>
+          <div class="tone" id="tone">Start typing to get feedback</div>
+        </div>
+      </div>
+      <p class="summary" id="summary"></p>
+
+      <div class="status" id="status"></div>
+
+      <nav class="tabs" id="tabs">
+        <button data-cat="all" class="active">All <b id="count-all">0</b></button>
+        <button data-cat="correctness"><i class="dot correctness"></i>Correctness <b id="count-correctness">0</b></button>
+        <button data-cat="clarity"><i class="dot clarity"></i>Clarity <b id="count-clarity">0</b></button>
+        <button data-cat="engagement"><i class="dot engagement"></i>Engagement <b id="count-engagement">0</b></button>
+        <button data-cat="delivery"><i class="dot delivery"></i>Delivery <b id="count-delivery">0</b></button>
+      </nav>
+
+      <div class="cards" id="cards"></div>
+      <button id="acceptAll" class="accept-all" hidden>Accept all correctness fixes</button>
+    </aside>
+  </main>
+
+  <!-- Popover shown when clicking an underlined phrase -->
+  <div class="popover" id="popover" hidden></div>
+
+  <!-- Floating AI toolbar for selected text -->
+  <div class="ai-bar" id="aiBar" hidden>
+    <div class="ai-quick">
+      <span class="ai-spark">✨</span>
+      <button data-instr="Improve the writing: fix errors and make it clearer and more fluent.">Improve</button>
+      <button data-instr="Make it shorter and more concise.">Shorten</button>
+      <button data-instr="Simplify it so a 10-year-old student can understand it.">Simplify</button>
+      <button data-instr="Make it more formal and academic.">Formal</button>
+      <button data-instr="Make it warmer and more friendly.">Friendly</button>
+    </div>
+    <form class="ai-custom" id="aiForm">
+      <input id="aiPrompt" placeholder="Or tell AI what to do… e.g. “add an example”" autocomplete="off" />
+      <button type="submit">Go</button>
+    </form>
+    <div class="ai-result" id="aiResult" hidden>
+      <div class="ai-result-text" id="aiResultText"></div>
+      <div class="ai-note" id="aiNote"></div>
+      <div class="ai-actions">
+        <button class="primary" id="aiReplace">Replace</button>
+        <button id="aiInsert">Insert below</button>
+        <button id="aiRetry">Try again</button>
+        <button class="link" id="aiDiscard">Discard</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Goals dialog -->
+  <dialog id="goalsDialog">
+    <form method="dialog" class="goals">
+      <h2>Set your goals</h2>
+      <p class="muted">Suggestions adapt to who you are writing for.</p>
+      <fieldset><legend>Audience</legend>
+        <label><input type="radio" name="audience" value="young students" /> Young students</label>
+        <label><input type="radio" name="audience" value="general" /> General</label>
+        <label><input type="radio" name="audience" value="knowledgeable" /> Knowledgeable</label>
+        <label><input type="radio" name="audience" value="expert" /> Expert</label>
+      </fieldset>
+      <fieldset><legend>Formality</legend>
+        <label><input type="radio" name="formality" value="informal" /> Informal</label>
+        <label><input type="radio" name="formality" value="neutral" /> Neutral</label>
+        <label><input type="radio" name="formality" value="formal" /> Formal</label>
+      </fieldset>
+      <fieldset><legend>Domain</legend>
+        <label><input type="radio" name="domain" value="academic" /> Academic</label>
+        <label><input type="radio" name="domain" value="general" /> General</label>
+        <label><input type="radio" name="domain" value="email" /> Email</label>
+        <label><input type="radio" name="domain" value="creative" /> Creative</label>
+      </fieldset>
+      <fieldset><legend>Intent</legend>
+        <label><input type="radio" name="intent" value="inform" /> Inform</label>
+        <label><input type="radio" name="intent" value="describe" /> Describe</label>
+        <label><input type="radio" name="intent" value="convince" /> Convince</label>
+        <label><input type="radio" name="intent" value="tell a story" /> Tell a story</label>
+      </fieldset>
+      <div class="goals-actions"><button class="primary" value="save">Done</button></div>
+    </form>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>

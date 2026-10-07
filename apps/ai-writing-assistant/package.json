@@ -1,0 +1,17 @@
+{
+  "name": "ai-writing-assistant",
+  "version": "1.0.0",
+  "description": "Grammarly-style writing assistant powered by Claude",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "mock": "MOCK=1 node server.js"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.131.0",
+    "zod": "^4.6.5"
+  },
+  "type": "module",
+  "private": true
+}
