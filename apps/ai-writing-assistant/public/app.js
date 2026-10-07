@@ -997,6 +997,16 @@ async function runStyle() {
 }
 $("styleBtn").addEventListener("click", runStyle);
 
+// Closing the panel also clears the AI-like underlines; the writer decides what to use.
+$("aiMeterClose").addEventListener("click", () => {
+  $("aiMeter").hidden = true;
+  state.suggestions = state.suggestions.filter((s) => s.category !== "style");
+  if (state.filter === "style") state.filter = "all";
+  hidePopover();
+  setStatus("", "");
+  render();
+});
+
 // ---------- Stories: saving, listing, switching ----------
 
 // Local store (IndexedDB), used when the platform has no store of its own.
