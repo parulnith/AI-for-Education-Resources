@@ -42,7 +42,8 @@ const RewriteResult = z.object({
 // ---------- Prompts ----------
 
 const CHECK_SYSTEM = `You are a writing assistant embedded in an editor, similar to Grammarly. \
-The writer is often a student or teacher. Review the text and return precise, local edits.
+The writer is often a student or teacher. Review the text and return precise, local edits. \
+The text is a story: the first line is its title, and blocks are separated by blank lines.
 
 Categories:
 - correctness: spelling, grammar, punctuation, agreement, wrong word.
@@ -52,7 +53,7 @@ Categories:
 
 Rules:
 - \`original\` MUST be copied character-for-character from the text and be as short as possible \
-(a word or phrase; a full sentence only for sentence-level rewrites). Never span paragraphs.
+(a word or phrase; a full sentence only for sentence-level rewrites). Never span blocks.
 - \`prefix\` is the exact text immediately before \`original\`, used to tell repeated phrases apart.
 - Do not overlap suggestions. Do not suggest changes that only restate the text.
 - Respect the writer's voice; suggest only what genuinely helps for their goals.

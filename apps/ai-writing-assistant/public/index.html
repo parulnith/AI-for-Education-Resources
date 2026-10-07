@@ -4,29 +4,51 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>AI Writing Assistant</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,700;1,8..60,400&display=swap" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <header class="topbar">
-    <div class="brand"><span class="logo">W</span> Writing Assistant</div>
-    <input id="title" class="doc-title" placeholder="Untitled document" aria-label="Document title" />
+    <button id="storiesBtn" class="icon-btn" aria-label="Your stories" title="Your stories">☰</button>
+    <div class="brand"><span class="logo">W</span><span class="brand-name">Writing Assistant</span></div>
+    <span class="save-state" id="saveState"></span>
     <div class="topbar-actions">
+      <!-- web-only -->
       <button id="keyBtn" class="ghost" hidden>🔑 API key</button>
-      <button id="styleBtn" class="ghost" title="Find phrasing that reads as AI-generated">🤖 Sounds like AI?</button>
+      <!-- /web-only -->
+      <button id="styleBtn" class="ghost" title="Find phrasing that reads as AI-written">🤖 Sounds like AI?</button>
       <button id="goalsBtn" class="ghost">🎯 Goals</button>
-      <button id="checkBtn" class="ghost">↻ Check now</button>
+      <button id="checkBtn" class="check-btn">Check writing</button>
     </div>
   </header>
 
+  <!-- Stories drawer -->
+  <aside class="drawer" id="drawer" hidden>
+    <div class="drawer-head">
+      <h2>Your stories</h2>
+      <button class="icon-btn" id="drawerClose" aria-label="Close">✕</button>
+    </div>
+    <button class="new-story" id="newStory">＋ New story</button>
+    <ul class="story-list" id="storyList"></ul>
+    <p class="fine" id="storageNote"></p>
+  </aside>
+  <div class="scrim" id="scrim" hidden></div>
+
   <main class="layout">
     <section class="page-wrap">
-      <div class="page">
-        <div class="editor" id="editor">
-          <div class="backdrop" id="backdrop" aria-hidden="true"></div>
-          <textarea id="text" spellcheck="false" placeholder="Type or paste your text here…"></textarea>
-          <div class="mirror" id="mirror" aria-hidden="true"></div>
+      <article class="page">
+        <div class="editor" id="editor" contenteditable="true" spellcheck="false" aria-label="Story editor"></div>
+        <div class="insert" id="insertWrap" hidden>
+          <button class="insert-btn" id="insertBtn" aria-label="Insert image or divider" title="Insert image or divider">＋</button>
+          <div class="insert-menu" id="insertMenu" hidden>
+            <button id="insImage">🖼 Image</button>
+            <button id="insDivider">— Divider</button>
+          </div>
         </div>
-      </div>
+        <input type="file" id="imageInput" accept="image/png,image/jpeg,image/gif,image/webp" hidden />
+      </article>
       <footer class="stats" id="stats"></footer>
     </section>
 
@@ -35,7 +57,7 @@
         <div class="score-ring" id="scoreRing"><span id="scoreNum">–</span></div>
         <div>
           <div class="score-label">Overall score</div>
-          <div class="tone" id="tone">Start typing to get feedback</div>
+          <div class="tone" id="tone">Check your writing to get feedback</div>
         </div>
       </div>
       <p class="summary" id="summary"></p>
@@ -49,7 +71,7 @@
         <p class="fine">Style feedback, not proof of who wrote it. No tool can reliably tell whether text was written by AI.</p>
       </section>
 
-      <div class="status" id="status"></div>
+      <div class="status" id="status" role="status"></div>
 
       <nav class="tabs" id="tabs">
         <button data-cat="all" class="active">All <b id="count-all">0</b></button>
@@ -68,28 +90,44 @@
   <!-- Popover shown when clicking an underlined phrase -->
   <div class="popover" id="popover" hidden></div>
 
-  <!-- Floating AI toolbar for selected text -->
-  <div class="ai-bar" id="aiBar" hidden>
-    <div class="ai-quick">
-      <span class="ai-spark">✨</span>
-      <button data-instr="Improve the writing: fix errors and make it clearer and more fluent.">Improve</button>
-      <button data-instr="Make it shorter and more concise.">Shorten</button>
-      <button data-instr="Simplify it so a 10-year-old student can understand it.">Simplify</button>
-      <button data-instr="Make it more formal and academic.">Formal</button>
-      <button data-instr="Make it warmer and more friendly.">Friendly</button>
+  <!-- Floating toolbar for selected text: formatting + AI -->
+  <div class="bubble" id="bubble" hidden>
+    <div class="bubble-row">
+      <button data-cmd="bold" title="Bold (Ctrl+B)"><b>B</b></button>
+      <button data-cmd="italic" title="Italic (Ctrl+I)"><i>i</i></button>
+      <button data-cmd="link" title="Link">🔗</button>
+      <span class="sep"></span>
+      <button data-cmd="h2" title="Big heading"><b>H</b></button>
+      <button data-cmd="h3" title="Small heading"><b class="small-h">H</b></button>
+      <button data-cmd="blockquote" title="Quote">❝</button>
+      <button data-cmd="ul" title="Bulleted list">• List</button>
+      <span class="sep"></span>
+      <button data-cmd="ai" class="ai-toggle" title="Rewrite with AI">✨ AI</button>
     </div>
-    <form class="ai-custom" id="aiForm">
-      <input id="aiPrompt" placeholder="Or tell AI what to do… e.g. “add an example”" autocomplete="off" />
-      <button type="submit">Go</button>
+    <form class="link-form" id="linkForm" hidden>
+      <input id="linkInput" placeholder="Paste a link and press Enter" autocomplete="off" />
     </form>
-    <div class="ai-result" id="aiResult" hidden>
-      <div class="ai-result-text" id="aiResultText"></div>
-      <div class="ai-note" id="aiNote"></div>
-      <div class="ai-actions">
-        <button class="primary" id="aiReplace">Replace</button>
-        <button id="aiInsert">Insert below</button>
-        <button id="aiRetry">Try again</button>
-        <button class="link" id="aiDiscard">Discard</button>
+    <div class="ai-panel" id="aiPanel" hidden>
+      <div class="ai-quick">
+        <button data-instr="Improve the writing: fix errors and make it clearer and more fluent.">Improve</button>
+        <button data-instr="Make it shorter and more concise.">Shorten</button>
+        <button data-instr="Simplify it so a 10-year-old student can understand it.">Simplify</button>
+        <button data-instr="Make it more formal and academic.">Formal</button>
+        <button data-instr="Make it warmer and more friendly.">Friendly</button>
+      </div>
+      <form class="ai-custom" id="aiForm">
+        <input id="aiPrompt" placeholder="Or tell AI what to do… e.g. “add an example”" autocomplete="off" />
+        <button type="submit">Go</button>
+      </form>
+      <div class="ai-result" id="aiResult" hidden>
+        <div class="ai-result-text" id="aiResultText"></div>
+        <div class="ai-note" id="aiNote"></div>
+        <div class="ai-actions">
+          <button class="primary" id="aiReplace">Replace</button>
+          <button id="aiInsert">Insert below</button>
+          <button id="aiRetry">Try again</button>
+          <button class="link" id="aiDiscard">Discard</button>
+        </div>
       </div>
     </div>
   </div>
@@ -126,6 +164,7 @@
     </form>
   </dialog>
 
+  <!-- web-only -->
   <!-- API key dialog (only used when the page is hosted without the Node server) -->
   <dialog id="keyDialog">
     <form class="goals" id="keyForm">
@@ -142,7 +181,8 @@
       </div>
     </form>
   </dialog>
-
+  <script src="platform-web.js"></script>
+  <!-- /web-only -->
   <script src="app.js"></script>
 </body>
 </html>
