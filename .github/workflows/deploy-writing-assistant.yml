@@ -1,5 +1,8 @@
 # Publishes apps/ai-writing-assistant as a static site on GitHub Pages.
 # In the hosted version, each visitor pastes their own Anthropic API key.
+#
+# One-time setup: Settings -> Pages -> Source: "GitHub Actions". Without it the
+# deploy job fails because the repository has no Pages site.
 name: Deploy AI Writing Assistant
 
 on:
@@ -32,7 +35,6 @@ jobs:
           cache-dependency-path: apps/ai-writing-assistant/package-lock.json
       - run: npm ci
       - run: npm run build
-      - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
           path: apps/ai-writing-assistant/public
